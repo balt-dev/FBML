@@ -1,267 +1,93 @@
 #include <stdint.h>
 #include <windows.h>
+#include <stdio.h>
 
 static HMODULE g_original_dll;
-
-typedef struct lua_State {
-  char dummy;
-} lua_State;
-typedef int (*lua_CFunction)(lua_State *L);
-typedef void *(*lua_Alloc)(void *ud, void *ptr, size_t osize, size_t nsize);
-typedef double lua_Number;
-typedef long long lua_Integer;
-typedef unsigned int lua_Unsigned;
-typedef const char *(*lua_Reader)(lua_State *L, void *ud, size_t *sz);
-typedef int (*lua_Writer)(lua_State *L, const void *p, size_t sz, void *ud);
-typedef void *(*lua_Alloc)(void *ud, void *ptr, size_t osize, size_t nsize);
-typedef struct lua_Debug {
-  char dummy;
-} lua_Debug;
-typedef void (*lua_Hook)(lua_State *L, lua_Debug *ar);
-typedef struct luaL_Buffer {
-  char dummy;
-} luaL_Buffer;
-typedef struct luaL_Stream {
-  char dummy;
-} luaL_Stream;
-typedef struct luaL_Reg {
-  const char *name;
-  lua_CFunction func;
-} luaL_Reg;
 
 #define REDEF(name, ret, args, vars)                                           \
   typedef ret(*PROXY_##name##_FUNC) args;                                      \
   __declspec(dllexport) ret name args {                                        \
+    printf("Calling " #name);                                                  \
     static PROXY_##name##_FUNC orig = NULL;                                    \
     orig = orig ? orig                                                         \
                 : (PROXY_##name##_FUNC)GetProcAddress(g_original_dll, #name);  \
     return orig vars;                                                          \
   }
 
-REDEF(lua_close, void, (lua_State * L), (L));
-REDEF(lua_newthread, lua_State *, (lua_State * L), (L));
-REDEF(lua_atpanic, lua_CFunction, (lua_State * L, lua_CFunction panicf),
-      (L, panicf));
-REDEF(lua_version, const lua_Number *, (lua_State * L), (L));
-REDEF(lua_absindex, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_gettop, int, (lua_State * L), (L));
-REDEF(lua_settop, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_pushvalue, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_remove, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_insert, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_replace, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_copy, void, (lua_State * L, int fromidx, int toidx),
-      (L, fromidx, toidx));
-REDEF(lua_checkstack, int, (lua_State * L, int sz), (L, sz));
-REDEF(lua_xmove, void, (lua_State * from, lua_State *to, int n), (from, to, n));
-REDEF(lua_isnumber, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_isstring, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_iscfunction, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_isuserdata, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_type, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_typename, const char *, (lua_State * L, int tp), (L, tp));
-REDEF(lua_tonumberx, lua_Number, (lua_State * L, int idx, int *isnum),
-      (L, idx, isnum));
-REDEF(lua_tointegerx, lua_Integer, (lua_State * L, int idx, int *isnum),
-      (L, idx, isnum));
-REDEF(lua_tounsignedx, lua_Unsigned, (lua_State * L, int idx, int *isnum),
-      (L, idx, isnum));
-REDEF(lua_toboolean, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_tolstring, const char *, (lua_State * L, int idx, size_t *len),
-      (L, idx, len));
-REDEF(lua_rawlen, size_t, (lua_State * L, int idx), (L, idx));
-REDEF(lua_tocfunction, lua_CFunction, (lua_State * L, int idx), (L, idx));
-REDEF(lua_touserdata, void *, (lua_State * L, int idx), (L, idx));
-REDEF(lua_tothread, lua_State *, (lua_State * L, int idx), (L, idx));
-REDEF(lua_topointer, const void *, (lua_State * L, int idx), (L, idx));
-REDEF(lua_arith, void, (lua_State * L, int op), (L, op));
-REDEF(lua_rawequal, int, (lua_State * L, int idx1, int idx2), (L, idx1, idx2));
-REDEF(lua_compare, int, (lua_State * L, int idx1, int idx2, int op),
-      (L, idx1, idx2, op));
-REDEF(lua_pushnil, void, (lua_State * L), (L));
-REDEF(lua_pushnumber, void, (lua_State * L, lua_Number n), (L, n));
-REDEF(lua_pushinteger, void, (lua_State * L, lua_Integer n), (L, n));
-REDEF(lua_pushunsigned, void, (lua_State * L, lua_Unsigned n), (L, n));
-REDEF(lua_pushlstring, const char *, (lua_State * L, const char *s, size_t l),
-      (L, s, l));
-REDEF(lua_pushstring, const char *, (lua_State * L, const char *s), (L, s));
-REDEF(lua_pushvfstring, const char *,
-      (lua_State * L, const char *fmt, va_list argp), (L, fmt, argp));
-REDEF(lua_pushcclosure, void, (lua_State * L, lua_CFunction fn, int n),
-      (L, fn, n));
-REDEF(lua_pushboolean, void, (lua_State * L, int b), (L, b));
-REDEF(lua_pushlightuserdata, void, (lua_State * L, void *p), (L, p));
-REDEF(lua_pushthread, int, (lua_State * L), (L));
-REDEF(lua_getglobal, void, (lua_State * L, const char *var), (L, var));
-REDEF(lua_gettable, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_getfield, void, (lua_State * L, int idx, const char *k), (L, idx, k));
-REDEF(lua_rawget, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_rawgeti, void, (lua_State * L, int idx, int n), (L, idx, n));
-REDEF(lua_rawgetp, void, (lua_State * L, int idx, const void *p), (L, idx, p));
-REDEF(lua_createtable, void, (lua_State * L, int narr, int nrec),
-      (L, narr, nrec));
-REDEF(lua_newuserdata, void *, (lua_State * L, size_t sz), (L, sz));
-REDEF(lua_getmetatable, int, (lua_State * L, int objindex), (L, objindex));
-REDEF(lua_getuservalue, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_setglobal, void, (lua_State * L, const char *var), (L, var));
-REDEF(lua_settable, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_setfield, void, (lua_State * L, int idx, const char *k), (L, idx, k));
-REDEF(lua_rawset, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_rawseti, void, (lua_State * L, int idx, int n), (L, idx, n));
-REDEF(lua_rawsetp, void, (lua_State * L, int idx, const void *p), (L, idx, p));
-REDEF(lua_setmetatable, int, (lua_State * L, int objindex), (L, objindex));
-REDEF(lua_setuservalue, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_callk, void,
-      (lua_State * L, int nargs, int nresults, int ctx, lua_CFunction k),
-      (L, nargs, nresults, ctx, k));
-REDEF(lua_getctx, int, (lua_State * L, int *ctx), (L, ctx));
-REDEF(lua_pcallk, int,
-      (lua_State * L, int nargs, int nresults, int errfunc, int ctx,
-       lua_CFunction k),
-      (L, nargs, nresults, errfunc, ctx, k));
-REDEF(lua_load, int,
-      (lua_State * L, lua_Reader reader, void *dt, const char *mode),
-      (L, reader, dt, mode));
-REDEF(lua_dump, int, (lua_State * L, lua_Writer writer, void *data),
-      (L, writer, data));
-REDEF(lua_yieldk, int, (lua_State * L, int nresults, int ctx, lua_CFunction k),
-      (L, nresults, ctx, k));
-REDEF(lua_resume, int, (lua_State * L, lua_State *from, int narg),
-      (L, from, narg));
-REDEF(lua_status, int, (lua_State * L), (L));
-REDEF(lua_gc, int, (lua_State * L, int what, int data), (L, what, data));
-REDEF(lua_error, int, (lua_State * L), (L));
-REDEF(lua_next, int, (lua_State * L, int idx), (L, idx));
-REDEF(lua_concat, void, (lua_State * L, int n), (L, n));
-REDEF(lua_len, void, (lua_State * L, int idx), (L, idx));
-REDEF(lua_getallocf, lua_Alloc, (lua_State * L, void **ud), (L, ud));
-REDEF(lua_setallocf, void, (lua_State * L, lua_Alloc f, void *ud), (L, f, ud));
-REDEF(lua_getstack, int, (lua_State * L, int level, lua_Debug *ar),
-      (L, level, ar));
-REDEF(lua_getinfo, int, (lua_State * L, const char *what, lua_Debug *ar),
-      (L, what, ar));
-REDEF(lua_getlocal, const char *, (lua_State * L, const lua_Debug *ar, int n),
-      (L, ar, n));
-REDEF(lua_setlocal, const char *, (lua_State * L, const lua_Debug *ar, int n),
-      (L, ar, n));
-REDEF(lua_getupvalue, const char *, (lua_State * L, int funcindex, int n),
-      (L, funcindex, n));
-REDEF(lua_setupvalue, const char *, (lua_State * L, int funcindex, int n),
-      (L, funcindex, n));
-REDEF(lua_upvalueid, void *, (lua_State * L, int fidx, int n), (L, fidx, n));
-REDEF(lua_upvaluejoin, void,
-      (lua_State * L, int fidx1, int n1, int fidx2, int n2),
-      (L, fidx1, n1, fidx2, n2));
-REDEF(lua_sethook, int, (lua_State * L, lua_Hook func, int mask, int count),
-      (L, func, mask, count));
-REDEF(lua_gethook, lua_Hook, (lua_State * L), (L));
-REDEF(lua_gethookmask, int, (lua_State * L), (L));
-REDEF(lua_gethookcount, int, (lua_State * L), (L));
-REDEF(luaopen_base, int, (lua_State * L), (L));
-REDEF(luaopen_coroutine, int, (lua_State * L), (L));
-REDEF(luaopen_table, int, (lua_State * L), (L));
-REDEF(luaopen_io, int, (lua_State * L), (L));
-REDEF(luaopen_os, int, (lua_State * L), (L));
-REDEF(luaopen_string, int, (lua_State * L), (L));
-REDEF(luaopen_bit32, int, (lua_State * L), (L));
-REDEF(luaopen_math, int, (lua_State * L), (L));
-REDEF(luaopen_debug, int, (lua_State * L), (L));
-REDEF(luaopen_package, int, (lua_State * L), (L));
-REDEF(luaL_newstate, lua_State *, (void), ());
-REDEF(luaL_checkversion_, void, (lua_State * L, lua_Number ver), (L, ver));
-REDEF(luaL_getmetafield, int, (lua_State * L, int obj, const char *e),
-      (L, obj, e));
-REDEF(luaL_callmeta, int, (lua_State * L, int obj, const char *e), (L, obj, e));
-REDEF(luaL_tolstring, const char *, (lua_State * L, int idx, size_t *len),
-      (L, idx, len));
-REDEF(luaL_argerror, int, (lua_State * L, int numarg, const char *extramsg),
-      (L, numarg, extramsg));
-REDEF(luaL_checklstring, const char *, (lua_State * L, int numArg, size_t *l),
-      (L, numArg, l));
-REDEF(luaL_optlstring, const char *,
-      (lua_State * L, int numArg, const char *def, size_t *l),
-      (L, numArg, def, l));
-REDEF(luaL_checknumber, lua_Number, (lua_State * L, int numArg), (L, numArg));
-REDEF(luaL_optnumber, lua_Number, (lua_State * L, int nArg, lua_Number def),
-      (L, nArg, def));
-REDEF(luaL_checkinteger, lua_Integer, (lua_State * L, int numArg), (L, numArg));
-REDEF(luaL_optinteger, lua_Integer, (lua_State * L, int nArg, lua_Integer def),
-      (L, nArg, def));
-REDEF(luaL_checkunsigned, lua_Unsigned, (lua_State * L, int numArg),
-      (L, numArg));
-REDEF(luaL_optunsigned, lua_Unsigned,
-      (lua_State * L, int numArg, lua_Unsigned def), (L, numArg, def));
-REDEF(luaL_checkstack, void, (lua_State * L, int sz, const char *msg),
-      (L, sz, msg));
-REDEF(luaL_checktype, void, (lua_State * L, int narg, int t), (L, narg, t));
-REDEF(luaL_checkany, void, (lua_State * L, int narg), (L, narg));
-REDEF(luaL_newmetatable, int, (lua_State * L, const char *tname), (L, tname));
-REDEF(luaL_setmetatable, void, (lua_State * L, const char *tname), (L, tname));
-REDEF(luaL_testudata, void *, (lua_State * L, int ud, const char *tname),
-      (L, ud, tname));
-REDEF(luaL_checkudata, void *, (lua_State * L, int ud, const char *tname),
-      (L, ud, tname));
-REDEF(luaL_where, void, (lua_State * L, int lvl), (L, lvl));
-REDEF(luaL_checkoption, int,
-      (lua_State * L, int narg, const char *def, const char *const lst[]),
-      (L, narg, def, lst));
-REDEF(luaL_fileresult, int, (lua_State * L, int stat, const char *fname),
-      (L, stat, fname));
-REDEF(luaL_execresult, int, (lua_State * L, int stat), (L, stat));
-REDEF(luaL_ref, int, (lua_State * L, int t), (L, t));
-REDEF(luaL_unref, void, (lua_State * L, int t, int ref), (L, t, ref));
-REDEF(luaL_loadfilex, int,
-      (lua_State * L, const char *filename, const char *mode),
-      (L, filename, mode));
-REDEF(luaL_loadbufferx, int,
-      (lua_State * L, const char *buff, size_t sz, const char *name,
-       const char *mode),
-      (L, buff, sz, name, mode));
-REDEF(luaL_loadstring, int, (lua_State * L, const char *s), (L, s));
-REDEF(luaL_len, int, (lua_State * L, int idx), (L, idx));
-REDEF(luaL_gsub, const char *,
-      (lua_State * L, const char *s, const char *p, const char *r),
-      (L, s, p, r));
-REDEF(luaL_setfuncs, void, (lua_State * L, const luaL_Reg *l, int nup),
-      (L, l, nup));
-REDEF(luaL_getsubtable, int, (lua_State * L, int idx, const char *fname),
-      (L, idx, fname));
-REDEF(luaL_traceback, void,
-      (lua_State * L, lua_State *L1, const char *msg, int level),
-      (L, L1, msg, level));
-REDEF(luaL_requiref, void,
-      (lua_State * L, const char *modname, lua_CFunction openf, int glb),
-      (L, modname, openf, glb));
-REDEF(luaL_buffinit, void, (lua_State * L, luaL_Buffer *B), (L, B));
-REDEF(luaL_prepbuffsize, char *, (luaL_Buffer * B, size_t sz), (B, sz));
-REDEF(luaL_addlstring, void, (luaL_Buffer * B, const char *s, size_t l),
-      (B, s, l));
-REDEF(luaL_addstring, void, (luaL_Buffer * B, const char *s), (B, s));
-REDEF(luaL_addvalue, void, (luaL_Buffer * B), (B));
-REDEF(luaL_pushresult, void, (luaL_Buffer * B), (B));
-REDEF(luaL_pushresultsize, void, (luaL_Buffer * B, size_t sz), (B, sz));
-REDEF(luaL_buffinitsize, char *, (lua_State * L, luaL_Buffer *B, size_t sz),
-      (L, B, sz));
-REDEF(luaL_pushmodule, void, (lua_State * L, const char *modname, int sizehint),
-      (L, modname, sizehint));
-REDEF(luaL_openlib, void,
-      (lua_State * L, const char *libname, const luaL_Reg *l, int nup),
-      (L, libname, l, nup))
+typedef unsigned long uLong;
+typedef uLong uLongf;
+typedef unsigned int  uInt;
+typedef void * gz_headerp;
+typedef void * z_streamp;
+typedef void * voidp;
+typedef void * voidpc;
+typedef void * gzFile;
+typedef long long z_off_t;
+typedef unsigned long z_crc_t;
+typedef unsigned char Byte;
+typedef unsigned char Bytef;
+typedef int (*out_func)(void *, unsigned char *, unsigned);
 
-// Fuck it
+REDEF(zlibVersion, const char *, (void), ());
+REDEF(deflate, int, (z_streamp strm, int flush), (strm, flush));
+REDEF(deflateEnd, int, (z_streamp strm), (strm));
+REDEF(inflate, int, (z_streamp strm, int flush), (strm, flush));
+REDEF(inflateEnd, int, (z_streamp strm), (strm));
+REDEF(deflateSetDictionary, int, (z_streamp strm, uInt dictLength), (strm, dictLength));
+REDEF(deflateCopy, int, (z_streamp dest, z_streamp source), (dest, source));
+REDEF(deflateReset, int, (z_streamp strm), (strm));
+REDEF(deflateParams, int, (z_streamp strm, int strategy), (strm, strategy));
+REDEF(deflateTune, int, (z_streamp strm, int max_chain), (strm, max_chain));
+REDEF(deflateBound, uLong, (z_streamp strm, uLong sourceLen), (strm, sourceLen));
+REDEF(deflatePrime, int, (z_streamp strm, int value), (strm, value));
+REDEF(deflateSetHeader, int, (z_streamp strm, gz_headerp head), (strm, head));
+REDEF(inflateSetDictionary, int, (z_streamp strm, uInt dictLength), (strm, dictLength));
+REDEF(inflateSync, int, (z_streamp strm), (strm));
+REDEF(inflateCopy, int, (z_streamp dest, z_streamp source), (dest, source));
+REDEF(inflateReset, int, (z_streamp strm), (strm));
+REDEF(inflatePrime, int, (z_streamp strm, int value), (strm, value));
+REDEF(inflateGetHeader, int, (z_streamp strm, gz_headerp head), (strm, head));
+REDEF(inflateBack, int, (z_streamp strm, out_func out, void *out_desc), (strm, out, out_desc));
+REDEF(inflateBackEnd, int, (z_streamp strm), (strm));
+REDEF(zlibCompileFlags, uLong, (void), ());
+REDEF(compress, int, (Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen), (dest, destLen, source, sourceLen));
+REDEF(compress2, int, (Bytef *dest, uLongf *destLen, int level), (dest, destLen, level));
+REDEF(compressBound, uLong, (uLong sourceLen), (sourceLen));
+REDEF(uncompress, int, (Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen), (dest, destLen, source, sourceLen));
+REDEF(gzopen, gzFile, (const char *path, const char *mode), (path, mode));
+REDEF(gzdopen, gzFile, (int fd, const char *mode), (fd, mode));
+REDEF(gzsetparams, int, (gzFile file, int level, int strategy), (file, level, strategy));
+REDEF(gzread, int, (gzFile file, voidp buf, unsigned len), (file, buf, len));
+REDEF(gzwrite, int, (gzFile file, voidpc buf, unsigned len), (file, buf, len));
+REDEF(gzputs, int, (gzFile file, const char *s), (file, s));
+REDEF(gzgets, char *, (gzFile file, char *buf, int len), (file, buf, len));
+REDEF(gzputc, int, (gzFile file, int c), (file, c));
+REDEF(gzgetc, int, (gzFile file), (file));
+REDEF(gzungetc, int, (int c, gzFile file), (c, file));
+REDEF(gzflush, int, (gzFile file, int flush), (file, flush));
+REDEF(gzseek, z_off_t, (gzFile file, z_off_t t, int i), (file, t, i));
+REDEF(gzrewind, int, (gzFile file), (file));
+REDEF(gztell, z_off_t, (gzFile file), (file));
+REDEF(gzeof, int, (gzFile file), (file));
+REDEF(gzdirect, int, (gzFile file), (file));
+REDEF(gzclose, int, (gzFile file), (file));
+REDEF(gzerror, const char *, (gzFile file, int *errnum), (file, errnum));
+REDEF(gzclearerr, void, (gzFile file), (file));
+REDEF(adler32, uLong, (uLong adler, const Bytef *buf, uInt len), (adler, buf, len));
+REDEF(crc32, uLong, (uLong crc, const Bytef *buf, uInt len), (crc, buf, len));
+REDEF(crc32_combine, uLong, (uLong crc1, uLong crc2, z_off_t len2), (crc1, crc2, len2));
+REDEF(deflateInit_, int, (z_streamp strm, int level, const char *version, int stream_size), (strm, level, version, stream_size));
+REDEF(inflateInit_, int, (z_streamp strm, const char *version, int stream_size), (strm, version, stream_size));
+REDEF(deflateInit2_, int, (z_streamp strm, int level, int method, int stream_size), (strm, level, method, stream_size));
+REDEF(inflateInit2_, int, (z_streamp strm, int windowBits, const char *version, int stream_size), (strm, windowBits, version, stream_size));
+REDEF(inflateBackInit_, int, (z_streamp strm, int windowBits, int stream_size), (strm, windowBits, stream_size));
+REDEF(zError, const char *, (int i), (i));
+REDEF(inflateSyncPoint, int, (z_streamp p), (p));
+REDEF(get_crc_table, const z_crc_t *, (void), ());
+REDEF(gzvprintf, int, (gzFile file, va_list va), (file, va));
 
-extern const char *lua_pushfstring(lua_State *L, const char *fmt, ...) {
+int gzprintf(gzFile file, ...) {
   va_list argp;
-  va_start(argp, fmt);
-  return lua_pushvfstring(L, fmt, argp);
-}
-
-extern int luaL_error(lua_State *L, const char *fmt, ...) {
-  va_list argp;
-  va_start(argp, fmt);
-  luaL_where(L, 1);
-  lua_pushvfstring(L, fmt, argp);
-  va_end(argp);
-  lua_concat(L, 2);
-  return lua_error(L);
+  va_start(argp, file);
+  return gzvprintf(file, argp);
 }

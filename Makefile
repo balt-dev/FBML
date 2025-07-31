@@ -1,7 +1,7 @@
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:src/%.c=obj/%.o)
 HEADER = $(wildcard src/*.h)
-OUT = dist/lua52.dll
+OUT = dist/zlib1.dll
 CC = winegcc -bi686-w64-mingw32
 
 CFLAGS = -I./lib/include
