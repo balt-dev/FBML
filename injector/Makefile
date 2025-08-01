@@ -6,7 +6,7 @@ CC = winegcc -bi686-w64-mingw32
 
 CFLAGS = -I./lib/include
 LDFLAGS = -L./lib
-LIBS = -llua52
+LIBS = -llua52 -lws2_32
 
 obj dist:
 	mkdir -p $@

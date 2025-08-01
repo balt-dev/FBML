@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "luaimport.h"
 #include "inject.h"
+#include "networking.h"
 
 lua_newstate_t g_pOriginal_lua_newstate = NULL;
 lua_newstate_t g_pTrampoline_lua_newstate = NULL;
@@ -104,6 +105,7 @@ lua_State* __cdecl Hooked_lua_newstate(lua_Alloc f, void* ud) {
         LPBYTE baseAddr = (LPBYTE)g_pOriginal_lua_newstate - LUA_NEWSTATE_GHIDRA;
         printf("Address offset: %p\n", baseAddr);
         setupFunctionPointers((DWORD) baseAddr);
+        initNetworking();
         pointersSetUp = true;
     }
     lua_State* L = g_pTrampoline_lua_newstate(f, ud);
