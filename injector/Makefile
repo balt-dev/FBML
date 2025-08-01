@@ -22,11 +22,11 @@ compile: $(OBJ)
 build: $(OUT)
 
 run: compile build
-	cp /home/baltdev/Documents/fbw-multiplayer-lib/dist/zlib1.dll /home/baltdev/Games/Steam/common/Fractal\ Block\ World/Bin/WindowsMinGW/zlib1.dll
+	cp /home/baltdev/Documents/fbw-multiplayer-lib/injector/dist/zlib1.dll /home/baltdev/Games/Steam/common/Fractal\ Block\ World/Bin/WindowsMinGW/zlib1.dll
 	steam steam://rungameid/1540570
 	tail -f /home/baltdev/Games/Steam/common/Fractal\ Block\ World/stdout.txt
 
 clean:
 	rm -rf obj/* dist/*
 
-.PHONY: compile build run clean
+all: clean compile build run
