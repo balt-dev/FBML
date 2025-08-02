@@ -6,7 +6,7 @@ CC = winegcc -bi686-w64-mingw32
 
 CFLAGS = -I./lib/include
 LDFLAGS = -L./lib
-LIBS = -llua52 -lws2_32
+LIBS = -lshlwapi
 
 obj dist:
 	mkdir -p $@
@@ -22,7 +22,7 @@ compile: $(OBJ)
 build: $(OUT)
 
 run: compile build
-	cp /home/baltdev/Documents/fbw-multiplayer-lib/injector/dist/zlib1.dll /home/baltdev/Games/Steam/common/Fractal\ Block\ World/Bin/WindowsMinGW/zlib1.dll
+	cp /home/baltdev/Documents/FBML/dist/zlib1.dll /home/baltdev/Games/Steam/common/Fractal\ Block\ World/Bin/WindowsMinGW/zlib1.dll
 	steam steam://rungameid/1540570
 	tail -f /home/baltdev/Games/Steam/common/Fractal\ Block\ World/stdout.txt
 
