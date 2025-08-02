@@ -49,17 +49,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 }
 
 /*
+    Old code for hooking, for reference:
 
+    LPVOID pNewstateAddress = scanForSig(LUA_NEWSTATE_SIG, 32);
+    if (!pNewstateAddress) {
+      printf("Failed to find address of lua_newstate.");
+      return FALSE;
+    }
+    g_pOriginal_lua_newstate = (lua_newstate_t)pNewstateAddress;
 
-            LPVOID pNewstateAddress = scanForSig(LUA_NEWSTATE_SIG, 32);
-            if (!pNewstateAddress) {
-              printf("Failed to find address of lua_newstate.");
-              return FALSE;
-            }
-            g_pOriginal_lua_newstate = (lua_newstate_t)pNewstateAddress;
-
-            if (!injectDetour(pNewstateAddress, Hooked_lua_newstate, (void**) &g_pTrampoline_lua_newstate)) {
-              printf("Error: Failed to detour lua_newstate.\n");
-              return FALSE;
-            }
-            */
+    if (!injectDetour(pNewstateAddress, Hooked_lua_newstate, (void**) &g_pTrampoline_lua_newstate)) {
+      printf("Error: Failed to detour lua_newstate.\n");
+      return FALSE;
+    }
+*/
