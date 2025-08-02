@@ -1,8 +1,6 @@
 #pragma once
 
-#include <lua.h>
-#include <lauxlib.h>
+#include <stdint.h>
 
+bool injectDetour(void *original, void *hook, void **trampoline, size_t stolenBytes);
 void * scanForSig(char * sig, size_t len);
-bool injectDetour(void *target, void *hook, void **orig);
-void injectLibraries(lua_State * state);
