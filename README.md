@@ -1,3 +1,6 @@
+# Archival notice
+Due to explicit disapproval by Daniel Hathaway, the main developer of Fractal Block World, this project has unfortunately been discontinued.
+
 # FBML
 A codemod loader for Fractal Block World. Written in C.
 
