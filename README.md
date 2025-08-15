@@ -1,5 +1,5 @@
 # FBML
-A DLL patch for Fractal Block World that allows you to reset the Lua environment to base, giving you all Lua libraries, including `os`, `debug`, and other things.
+A DLL patch for Fractal Block World that allows you to reset the Lua environment to base, giving you access to all Lua libraries, including `os`, `debug`, and other things.
 
 # A word of warning
 These libraries were excluded from the game _for a reason_. It is entirely possible to **write a virus into a package** with this patch installed.
