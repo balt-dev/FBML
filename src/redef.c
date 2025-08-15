@@ -2,15 +2,19 @@
 #include <windows.h>
 #include <stdio.h>
 
-static HMODULE g_original_dll;
+extern HMODULE g_original_dll;
 
 #define REDEF(name, ret, args, vars)                                           \
   typedef ret(*PROXY_##name##_FUNC) args;                                      \
   __declspec(dllexport) ret name args {                                        \
-    printf("Calling " #name);                                                  \
     static PROXY_##name##_FUNC orig = NULL;                                    \
     orig = orig ? orig                                                         \
                 : (PROXY_##name##_FUNC)GetProcAddress(g_original_dll, #name);  \
+    if (!orig) { \
+      printf("Failed to call function " #name " as it was null\n"); \
+      MessageBoxA(NULL, "Failed to call function " #name " as it was null", NULL, 0); \
+      __builtin_trap(); \
+    } \
     return orig vars;                                                          \
   }
 

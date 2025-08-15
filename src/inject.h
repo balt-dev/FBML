@@ -1,12 +1,9 @@
 #pragma once
 
-bool attachDLLs();
-void freeDLLs();
+#include "luaimport.h"
 
-typedef struct DLLHandle {
-	HMODULE moduleHandle;
-} DLLHandle;
+lua_State* __cdecl Hooked_lua_newstate(lua_Alloc f, void* ud);
+void __cdecl Hooked_CheckAgainstWhiteList(int param_11);
 
-extern DLLHandle * loadedDLLs;
-extern size_t loadedDLLCount;
-
+extern lua_newstate_t g_pOriginal_lua_newstate;
+extern lua_newstate_t g_pTrampoline_lua_newstate;
